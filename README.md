@@ -20,7 +20,7 @@ The sub-categories can be further specified, refer to the inline documentation.
 
 ### ignore
 The iterable *ignored* is added to the permanently ignored, i.e. done, problems, saved in a generated *ignored.json* file in
-the root directory. Upon import the contents of the file are parsed and added to a runtime variable.
+the root directory. Upon import the contents of the file are parsed and imported.
 
 ## dicts2020.py
 Holds the OG2020 problem classification.
@@ -29,5 +29,5 @@ Holds the OG2020 problem classification.
 Holds the OG2019 problem classification with no RC problems.
 
 ## converter.py
-Contains a limited OG2020:OG2019 (and vice-versa) conversion map. 
+Contains a limited OG2020 : OG2019 (and vice-versa) conversion map. 
 Requires [*bidict*](https://pypi.org/project/bidict/0.3.1/).
