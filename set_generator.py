@@ -62,7 +62,6 @@ def generate_set(nProb: int, qvb='b', cats=frozenset(), subcats=frozenset(),
             newCats = cats
 
         for cat in newCats:
-
             if cat not in _quant:
                 continue
 
@@ -73,15 +72,15 @@ def generate_set(nProb: int, qvb='b', cats=frozenset(), subcats=frozenset(),
                 elif psds == 'd':
                     newSubcats = tuple(_tot[cat]["DS"].keys())
                 else:
-                    newSubcats = tuple(list(_tot[cat]["PS"].keys()) +
-                                       list(_tot[cat]["DS"].keys()))
+                    newSubcats = set(list(_tot[cat]["PS"].keys()) +
+                                     list(_tot[cat]["DS"].keys()))
             else:
                 newSubcats = subcats
 
             for subcat in newSubcats:
                 if psds == 'p':
                     source += _tot[cat]["PS"][subcat]
-                if psds == 'd':
+                elif psds == 'd':
                     source += _tot[cat]["DS"][subcat]
                 else:
                     # not a given that they share all the subcats
@@ -204,8 +203,8 @@ def generate_set_rc(nPass: int, nQs: int, subcats=frozenset(), **kwargs):
                      for row in split_source])
 
     ret = []
-    passages =  sorted(np.random.choice(np.shape(a_ss)[0], (nPass,),
-                                        replace=False))
+    passages = sorted(np.random.choice(np.shape(a_ss)[0], (nPass,),
+                                       replace=False))
     for iPass in passages:
         err = True
         q = nQs
