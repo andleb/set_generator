@@ -8,11 +8,9 @@ Created on Mon Oct 21 08:50:12 2019
 import itertools as it
 import numpy as np
 
-# TODO:
-#      * easy, med, hard
-
 ### IGNORE SET
 import json
+
 with open("ignored.json", 'r') as f:
     _ignored = set()
     for el in json.load(f):
@@ -30,21 +28,21 @@ with open("ignored_extra.json", 'r') as f:
 from dicts2020 import *
 
 _tot = {
-        "FDPs": FDPs,
-        "Algebra": Algebra,
-        "WP": WP,
-        "Geometry": Geometry,
-        "NumProp": NumProp,
-        "CR": CR,
-        "RC": RC,
-        "SC": SC
-        }
+    "FDPs"    : FDPs,
+    "Algebra" : Algebra,
+    "WP"      : WP,
+    "Geometry": Geometry,
+    "NumProp" : NumProp,
+    "CR"      : CR,
+    "RC"      : RC,
+    "SC"      : SC
+}
 _quant = {"FDPs", "Algebra", "WP", "Geometry", "NumProp"}
 _verb = {"CR", "RC", "SC"}
 
 
 def generate_set(nProb: int, qvb='b', cats=frozenset(), subcats=frozenset(),
-                 psds='b', **kwargs):
+                 psds='b'):
     """
     OG problem set builder for all but RC problems.
 
@@ -53,12 +51,11 @@ def generate_set(nProb: int, qvb='b', cats=frozenset(), subcats=frozenset(),
     :param cats: categories within quant and verbal
     :param subcats: sub-categories within the above categories
     :param psds: 'p' - problem solving, 'd' - data sufficiency, 'b' - both
-    :param kwargs:
     :return: a list of problem numbers generated
     """
 
     def build_quant():
-        source = []
+        sourceQ = []
 
         if not len(cats):
             newCats = _quant
@@ -83,24 +80,24 @@ def generate_set(nProb: int, qvb='b', cats=frozenset(), subcats=frozenset(),
 
             for subcat in newSubcats:
                 if psds == 'p':
-                    source += _tot[cat]["PS"][subcat]
+                    sourceQ += _tot[cat]["PS"][subcat]
                 elif psds == 'd':
-                    source += _tot[cat]["DS"][subcat]
+                    sourceQ += _tot[cat]["DS"][subcat]
                 else:
                     # not a given that they share all the subcats
                     try:
-                        source += _tot[cat]["PS"][subcat]
+                        sourceQ += _tot[cat]["PS"][subcat]
                     except KeyError:
                         pass
                     try:
-                        source += _tot[cat]["DS"][subcat]
+                        sourceQ += _tot[cat]["DS"][subcat]
                     except KeyError:
                         pass
-        return source
+        return sourceQ
 
     def build_verbal():
 
-        source = []
+        sourceV = []
         if psds != 'b':
             raise RuntimeError("PS/DS split only makes sense for"
                                "quant problems!")
@@ -120,13 +117,11 @@ def generate_set(nProb: int, qvb='b', cats=frozenset(), subcats=frozenset(),
                 newSubcats = subcats
 
             for subcat in newSubcats:
-                source += _tot[cat][subcat]
+                sourceV += _tot[cat][subcat]
 
-        return source
+        return sourceV
 
-    # to help the IDE, declare the var
-    source = None
-
+    source = []
     if qvb == 'q':
         source = build_quant()
 
@@ -136,8 +131,9 @@ def generate_set(nProb: int, qvb='b', cats=frozenset(), subcats=frozenset(),
     elif qvb == 'b':
         source = build_quant() + build_verbal()
 
-    source = list(filter(lambda el: el not in _ignored, source))
+    source = list(filter(lambda e: e not in _ignored, source))
 
+    ret = []
     while nProb >= 1:
         try:
             ret = sorted(np.array(source)
@@ -158,12 +154,19 @@ def generate_set(nProb: int, qvb='b', cats=frozenset(), subcats=frozenset(),
         except ValueError:
             ret[i] = ret[i]
 
-    return sorted(filter(lambda el: not isinstance(el, int), ret)) +\
-        sorted(filter(lambda el: isinstance(el, int), ret))
+    return sorted(filter(lambda e: not isinstance(e, int), ret)) + \
+       sorted(filter(lambda e: isinstance(e, int), ret))
 
 
 def generate_extraSimple(nProb: int, qvb='b', psds='b', rc=False):
     """
+    A very simple problem builder for the extra OG 2020 Quant/Verbal Reviews.
+
+    :param nProb: the total number of problems
+    :param qvb: 'q' - quant, 'v' - verbal, 'b' - both
+    :param psds: 'p' - problem solving, 'd' - data sufficiency, 'b' - both
+    :param rc: include Reading Comprehension in the draw
+    :return: a list of problem numbers generated
     """
 
     candsQ, candsV = [], []
@@ -174,7 +177,7 @@ def generate_extraSimple(nProb: int, qvb='b', psds='b', rc=False):
         elif psds == 'ds':
             candsQ = [i for i in generate_extraSimple.ds]
         else:
-            candsQ = [i for i in generate_extraSimple.ps] +\
+            candsQ = [i for i in generate_extraSimple.ps] + \
                      [i for i in generate_extraSimple.ds]
     elif qvb == 'v':
         if not rc:
@@ -190,7 +193,7 @@ def generate_extraSimple(nProb: int, qvb='b', psds='b', rc=False):
         elif psds == 'ds':
             candsQ = [i for i in generate_extraSimple.ds]
         else:
-            candsQ = [i for i in generate_extraSimple.ps] +\
+            candsQ = [i for i in generate_extraSimple.ps] + \
                      [i for i in generate_extraSimple.ds]
 
         candsV = [i for i in generate_extraSimple.cr] + \
@@ -238,7 +241,6 @@ def generate_set_rc(nPass: int, nQs: int, subcats=frozenset()):
     :param nPass: number of passages desired.
     :param nQs: (max) number of questions per passage.
     :param subcats: subcategories desired
-    :param kwargs:
     :return: list of lists: questions grouped by passage
     """
 
@@ -259,20 +261,20 @@ def generate_set_rc(nPass: int, nQs: int, subcats=frozenset()):
 
     for rng in RC_pass:
 
-        def filterKey(el):
+        def filterKey(e):
             r0 = rng[0] if isinstance(rng[0], int) else int(rng[0][1:])
             r1 = rng[1] if isinstance(rng[1], int) else int(rng[1][1:])
 
-            if isinstance(el, int):
-                return el in range(r0, r1 +1)
-            elif isinstance(el, str):
-                return int(el[1:]) in range(r0, r1 + 1)
+            if isinstance(e, int):
+                return e in range(r0, r1 + 1)
+            elif isinstance(e, str):
+                return int(e[1:]) in range(r0, r1 + 1)
             else:
                 raise TypeError
 
         split_source.append(list(filter(filterKey, source)))
 
-    a_ss = np.array([np.array(list(filter(lambda el: el not in _ignored, row)))
+    a_ss = np.array([np.array(list(filter(lambda e: e not in _ignored, row)))
                      for row in split_source])
 
     ret = []
@@ -285,9 +287,9 @@ def generate_set_rc(nPass: int, nQs: int, subcats=frozenset()):
         while err:
             try:
                 selRow = list(a_ss[iPass]
-                                    [sorted(np.random.choice(np.shape(
-                                            a_ss[iPass])[0], (q,),
-                                            replace=False))])
+                              [sorted(np.random.choice(np.shape(a_ss[iPass])[0],
+                                                       (q,),
+                                                       replace=False))])
 
                 # fix numpy int format which messes up the json serialization
                 for i in range(len(selRow)):
@@ -328,39 +330,39 @@ def _countTot(dic):
     return ll
 
 
-def _sortkey(el):
-    if isinstance(el, int):
-        return el
-    elif isinstance(el, str):
-        return int(el[1:])
+def _sortkey(e):
+    if isinstance(e, int):
+        return e
+    elif isinstance(e, str):
+        return int(e[1:])
 
 
-def _groupSequence(l):
-
-    temp_list = it.cycle(l)
+def _groupSequence(lst):
+    temp_list = it.cycle(lst)
     next(temp_list)
 
-    def isConsec(el):
-        if isinstance(el, int):
-            return el + 1 == next(temp_list)
-        elif isinstance(el, str):
+    def isConsec(e):
+        if isinstance(e, int):
+            return e + 1 == next(temp_list)
+        elif isinstance(e, str):
             try:
-                return int(el[1:]) + 1 == int(next(temp_list)[1:])
+                return int(e[1:]) + 1 == int(next(temp_list)[1:])
             except TypeError:
                 return False
 
-    groups = it.groupby(l, key=isConsec)
+    groups = it.groupby(lst, key=isConsec)
 
     for k, v in groups:
         if k:
-            yield tuple(v) + (next((next(groups)[1])), )
+            yield tuple(v) + (next((next(groups)[1])),)
 
 
 def ignore(ignored: set, extra=False):
     """
     Add the iterable ignored to the permanently ignored problems.
 
-    :param ignored:
+    :param ignored: The new set of problems to be ignored in the future.
+    :param extra: Are we dealing with the extra OG Review books?
     """
     global _ignored, _ignored_extra
 
@@ -369,23 +371,22 @@ def ignore(ignored: set, extra=False):
     else:
         _ignored_extra = set(_ignored_extra).union(set(ignored))
 
-    with open("ignored" + ("_extra" if extra else "") + ".json", 'w') as f:
-        json.dump(list(_ignored_extra if extra else _ignored), f)
+    with open("ignored" + ("_extra" if extra else "") + ".json", 'w') as file:
+        json.dump(list(_ignored_extra if extra else _ignored), file)
 
 
 if __name__ == "__main__":
+    # res = generate_set(6, 'b', cats=_quant | _verb - {"RC"})
+    # print(res)
+    # res2 = generate_set_rc(1, 3)
+    # print(res2)
+    #
+    # print("Done " + str(round(len(_ignored) / _countTot(_tot) * 100, 2))
+    #       + "% of problems")
 
-   # res = generate_set(6, 'b', cats=_quant | _verb - {"RC"})
-   # print(res)
-   # res2 = generate_set_rc(1, 3)
-   # print(res2)
-   #
-   # print("Done " + str(round(len(_ignored) / _countTot(_tot) * 100, 2))
-   #       + "% of problems")
-
-   ## Add done problems to the ignored set
-   # ignore(res)
-   # ignore([p for group in res2 for p in group])
+    ## Add done problems to the ignored set
+    # ignore(res)
+    # ignore([p for group in res2 for p in group])
 
     resE = generate_extraSimple(10)
     print(resE)
