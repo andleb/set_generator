@@ -22,6 +22,10 @@ with open("ignored.json", 'r') as f:
         except ValueError:
             _ignored.add(el)
 
+with open("ignored_extra.json", 'r') as f:
+    _ignored_extra = set()
+    for el in json.load(f):
+        _ignored_extra.add(el)
 
 from dicts2020 import *
 
@@ -158,7 +162,76 @@ def generate_set(nProb: int, qvb='b', cats=frozenset(), subcats=frozenset(),
         sorted(filter(lambda el: isinstance(el, int), ret))
 
 
-def generate_set_rc(nPass: int, nQs: int, subcats=frozenset(), **kwargs):
+def generate_extraSimple(nProb: int, qvb='b', psds='b', rc=False):
+    """
+    """
+
+    candsQ, candsV = [], []
+
+    if qvb == 'q':
+        if psds == 'ps':
+            candsQ = [i for i in generate_extraSimple.ps]
+        elif psds == 'ds':
+            candsQ = [i for i in generate_extraSimple.ds]
+        else:
+            candsQ = [i for i in generate_extraSimple.ps] +\
+                     [i for i in generate_extraSimple.ds]
+    elif qvb == 'v':
+        if not rc:
+            candsV = [i for i in generate_extraSimple.cr] + \
+                     [i for i in generate_extraSimple.sc]
+        else:
+            candsV = [i for i in generate_extraSimple.cr] + \
+                     [i for i in generate_extraSimple.sc] + \
+                     [i for i in generate_extraSimple.rc]
+    else:
+        if psds == 'ps':
+            candsQ = [i for i in generate_extraSimple.ps]
+        elif psds == 'ds':
+            candsQ = [i for i in generate_extraSimple.ds]
+        else:
+            candsQ = [i for i in generate_extraSimple.ps] +\
+                     [i for i in generate_extraSimple.ds]
+
+        candsV = [i for i in generate_extraSimple.cr] + \
+                 [i for i in generate_extraSimple.sc]
+        if rc:
+            candsV += [i for i in generate_extraSimple.rc]
+
+    # Since we're dealing with 2 books, I'm using a prefix Q/V to disambiguate.
+    # This, however, makes the elements strings.
+
+    candsQ = list(map(lambda s: 'Q' + s, map(str, candsQ)))
+    candsV = list(map(lambda s: 'V' + s, map(str, candsV)))
+
+    cands = list(filter(lambda e: e not in _ignored_extra, candsQ + candsV))
+
+    ret = []
+
+    while nProb >= 1:
+        try:
+            ret = sorted(np.array(cands)
+                         [sorted(np.random.choice(len(cands), (nProb,),
+                                                  replace=False))])
+            break
+
+        except ValueError:
+            nProb -= 1
+
+    if nProb < 1:
+        raise RuntimeError("Seems you've run out of problems.")
+
+    return sorted(ret)
+
+
+generate_extraSimple.ps = range(1, 177)
+generate_extraSimple.ds = range(177, 320)
+generate_extraSimple.rc = range(1, 102)
+generate_extraSimple.cr = range(102, 200)
+generate_extraSimple.sc = range(200, 313)
+
+
+def generate_set_rc(nPass: int, nQs: int, subcats=frozenset()):
     """
     OG problem set builder for RC problems.
 
@@ -298,14 +371,17 @@ def ignore(ignored: set):
 
 if __name__ == "__main__":
 
-   res = generate_set(6, 'b', cats=_quant | _verb - {"RC"})
-   print(res)
-   res2 = generate_set_rc(1, 3)
-   print(res2)
-
-   print("Done " + str(round(len(_ignored) / _countTot(_tot) * 100, 2))
-         + "% of problems")
+   # res = generate_set(6, 'b', cats=_quant | _verb - {"RC"})
+   # print(res)
+   # res2 = generate_set_rc(1, 3)
+   # print(res2)
+   #
+   # print("Done " + str(round(len(_ignored) / _countTot(_tot) * 100, 2))
+   #       + "% of problems")
 
    ## Add done problems to the ignored set
    # ignore(res)
    # ignore([p for group in res2 for p in group])
+
+    resE = generate_extraSimple(10)
+    print(resE)
