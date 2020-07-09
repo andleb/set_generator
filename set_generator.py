@@ -356,17 +356,21 @@ def _groupSequence(l):
             yield tuple(v) + (next((next(groups)[1])), )
 
 
-def ignore(ignored: set):
+def ignore(ignored: set, extra=False):
     """
     Add the iterable ignored to the permanently ignored problems.
 
     :param ignored:
     """
-    global _ignored
+    global _ignored, _ignored_extra
 
-    _ignored = set(_ignored).union(set(ignored))
-    with open("ignored.json", 'w') as f:
-        json.dump(list(_ignored), f)
+    if not extra:
+        _ignored = set(_ignored).union(set(ignored))
+    else:
+        _ignored_extra = set(_ignored_extra).union(set(ignored))
+
+    with open("ignored" + ("_extra" if extra else "") + ".json", 'w') as f:
+        json.dump(list(_ignored_extra if extra else _ignored), f)
 
 
 if __name__ == "__main__":
